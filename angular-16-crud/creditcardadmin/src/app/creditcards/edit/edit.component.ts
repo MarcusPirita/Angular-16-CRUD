@@ -1,7 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, takeUntil } from 'rxjs';
 import { CreditCard } from 'src/app/models/credit-card';
 import { CreditcardsService } from 'src/app/services/creditcards.service';
@@ -11,7 +11,7 @@ import { CreditcardsService } from 'src/app/services/creditcards.service';
   templateUrl: './edit.component.html',
   styleUrls: ['./edit.component.scss']
 })
-export class EditComponent {
+export class EditComponent implements OnInit, OnDestroy {
 
   editCreditCardForm!: FormGroup;
 
@@ -21,6 +21,7 @@ export class EditComponent {
 
   constructor(private formBuilder: FormBuilder,
     private route: ActivatedRoute,
+    private router: Router, // Lisage see
     private snackBar: MatSnackBar,
     private creditCardsService: CreditcardsService) {
 
@@ -55,20 +56,32 @@ export class EditComponent {
 
   onSubmit(){
     if(this.editCreditCardForm.valid){
-      const updatedFormData: CreditCard = this.editCreditCardForm.value;
+      const updatedFormData: CreditCard = {
+        ...this.editCreditCardForm.value,
+        id: this.creditCardData?.id // Veenduge, et ID on olemas
+      };
 
       this.creditCardsService.updateCreditCard(updatedFormData)
       .pipe(takeUntil(this.destroy$))
       .subscribe(()=> {
         this.showSuccessMessage("Credit Card Updated Successfully");
-      })  
+        this.router.navigate(['/creditcards']); // Lisage navigeerimine pärast edukat uuendamist
+      }, error => {
+        this.showErrorMessage("Error updating credit card");
+      });
     }
   }
  
   showSuccessMessage(message: string){
     this.snackBar.open(message, 'Close', {
       duration: 3000
-    })
+    });
+  }
+
+  showErrorMessage(message: string){
+    this.snackBar.open(message, 'Close', {
+      duration: 3000
+    });
   }
 
   ngOnDestroy(){
